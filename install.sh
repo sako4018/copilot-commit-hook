@@ -9,8 +9,8 @@ DEST="$HOME/.config/git"
 check() {
   cur=$(git config --global --get "$1" || true)
   if [ -n "$cur" ] && [ "$cur" != "$2" ]; then
-    echo "Вече имаш зададено $1 = $cur"
-    echo "Не го презаписвам. Махни го ръчно (git config --global --unset $1) и пусни пак."
+    echo "You already have $1 = $cur"
+    echo "Not overwriting it. Remove it first (git config --global --unset $1) and run this again."
     exit 1
   fi
 }
@@ -25,7 +25,7 @@ install_file() {
   target="$2"
   if [ -f "$target" ] && ! cmp -s "$src" "$target"; then
     cp "$target" "$target.bak"
-    echo "Старият $target е запазен като $target.bak"
+    echo "Old $target saved as $target.bak"
   fi
   cp "$src" "$target"
   chmod +x "$target"
@@ -36,8 +36,8 @@ install_file hooks/auto-editor "$DEST/auto-editor"
 git config --global core.hooksPath "$DEST/hooks"
 git config --global core.editor "$DEST/auto-editor"
 
-echo "Готово."
+echo "Done."
 if ! command -v copilot >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/copilot" ]; then
-  echo "ВНИМАНИЕ: Copilot CLI не е намерен. Инсталирай го: npm install -g @github/copilot"
-  echo "и влез с: copilot login"
+  echo "WARNING: Copilot CLI not found. Install it: npm install -g @github/copilot"
+  echo "and sign in with: copilot login"
 fi

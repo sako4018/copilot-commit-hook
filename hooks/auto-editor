@@ -1,0 +1,10 @@
+#!/bin/sh
+# Used as git's editor. If the commit message is already filled in
+# (by the prepare-commit-msg hook), accept it without opening any screen.
+# Otherwise (empty message, rebase -i, etc.) open nano so you can type.
+FILE="$1"
+case "$(basename "$FILE")" in
+  COMMIT_EDITMSG|MERGE_MSG|SQUASH_MSG)
+    if grep -v '^#' "$FILE" | grep -q '[^[:space:]]'; then exit 0; fi ;;
+esac
+exec nano "$@"

@@ -1,0 +1,38 @@
+#!/bin/sh
+# Auto-generate a Conventional Commit message with GitHub Copilot CLI.
+# Never blocks the commit: on any problem it exits silently (empty message).
+
+MSG_FILE="$1"
+SOURCE="$2"
+
+# -m, merge, squash, amend (-c/-C) -> leave the message alone
+[ -n "$SOURCE" ] && exit 0
+# rebase / cherry-pick in progress
+GITDIR=$(git rev-parse --git-dir 2>/dev/null) || exit 0
+[ -d "$GITDIR/rebase-merge" ] || [ -d "$GITDIR/rebase-apply" ] && exit 0
+# nothing staged
+git diff --cached --quiet && exit 0
+
+COPILOT="$HOME/.local/bin/copilot"
+[ -x "$COPILOT" ] || COPILOT=$(command -v copilot) || exit 0
+
+DIFF=$( { git diff --cached --stat; git diff --cached --no-color -U2; } | head -c 12000)
+
+PROMPT="Write a git commit message for the staged changes below.
+Rules: output ONLY the message, no quotes, no code fences, no explanation.
+Format: Conventional Commit, first line 'type(scope): description' (scope optional),
+type is one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
+English, imperative mood, max 72 characters. For big changes add a blank line
+and 1-3 short lines of detail.
+
+$DIFF"
+
+MSG=$(perl -e 'alarm 40; exec @ARGV' "$COPILOT" -s --no-ask-user -p "$PROMPT" 2>/dev/null) || exit 0
+# strip code fences and surrounding blank lines
+MSG=$(printf '%s\n' "$MSG" | sed '/^```/d' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+[ -z "$MSG" ] && exit 0
+
+TMP=$(mktemp) || exit 0
+{ printf '%s\n' "$MSG"; cat "$MSG_FILE"; } > "$TMP" && cat "$TMP" > "$MSG_FILE"
+rm -f "$TMP"
+exit 0
